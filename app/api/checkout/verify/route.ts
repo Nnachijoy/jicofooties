@@ -52,10 +52,12 @@ async function receipt(reference: string, userId: string, userEmail: string) {
       await admin.from('cart_items').delete().eq('user_id', userId);
     }
 
-    // Send order confirmation email via Resend
-    if (process.env.RESEND_API_KEY) {
+    // Send order confirmation email via Brevo
+    if (process.env.BREVO_API_KEY) {
       try {
-        const address = Array.isArray(order.address) ? order.address[0] : order.address;
+        const address = Array.isArray(order.address)
+          ? order.address[0]
+          : order.address;
         const items = (order.items || []).map((i: any) => ({
           name: i.product_name,
           size: i.size,
