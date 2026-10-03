@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  --ink: #181917;
+  --paper: #f5f3ee;
+  --olive: #465041;
+  --muted: #77796f;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+}
+
+a { color: inherit; text-decoration: none; }
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+
+/* Ensure white text on dark green backgrounds */
+.bg-\[\#465041\],
+.bg-\[\#3a4236\],
+.bg-\[\#465041\]\/90 {
+  color: #ffffff;
+}
+
+/* Slightly larger body copy */
+body { font-size: 15px; }
+
+.serif { font-family: 'Playfair Display', serif; }
+
+.page-width {
+  width: min(1320px, calc(100% - 64px));
+  margin-inline: auto;
+}
+
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+
+.fade-in { animation: fade .7s ease both; }
+
+@keyframes fade {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+::selection { background: #b7c0aa; color: #181917; }
+
+@media (max-width: 700px) {
+  .page-width { width: calc(100% - 36px); }
+}
