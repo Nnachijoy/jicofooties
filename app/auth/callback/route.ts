@@ -7,16 +7,15 @@ export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code');
   const type = request.nextUrl.searchParams.get('type') as EmailOtpType | null;
   const next = request.nextUrl.searchParams.get('next') || '/account';
-  const safe = next.startsWith('/') && !next.startsWith('//') ? next : '/account';
+  const safe =
+    next.startsWith('/') && !next.startsWith('//') ? next : '/account';
 
   const db = await createClient();
 
   if (db) {
     if (token_hash && type) {
-      // Custom email template flow (device-independent)
       await db.auth.verifyOtp({ type, token_hash });
     } else if (code) {
-      // Default PKCE flow
       await db.auth.exchangeCodeForSession(code);
       await new Promise((r) => setTimeout(r, 0));
     }
