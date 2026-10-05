@@ -1,29 +1,44 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function ResetPassword() {
   const router = useRouter();
+  const [step, setStep] = useState<'code' | 'password'>('code');
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
-  const [state, setState] = useState<'verifying' | 'ready' | 'done' | 'error'>(
-    'verifying'
-  );
 
-  useEffect(() => {
-    const db = createClient();
-    db.auth.getSession().then(({ data }) => {
-      setState(data.session ? 'ready' : 'error');
-    });
-  }, []);
+  async function verifyCode() {
+    if (!email || !code) {
+      setNotice('Enter your email and the 6-digit code.');
+      return;
+    }
+    setBusy(true);
+    setNotice('');
+    try {
+      const db = createClient();
+      const { error } = await db.auth.verifyOtp({
+        email,
+        token: code,
+        type: 'recovery',
+      });
+      if (error) throw error;
+      setStep('password');
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : 'Invalid or expired code.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
-  async function submit() {
+  async function updatePassword() {
     if (password.length < 6) {
       setNotice('Password must be at least 6 characters.');
       return;
@@ -38,8 +53,8 @@ export default function ResetPassword() {
       const db = createClient();
       const { error } = await db.auth.updateUser({ password });
       if (error) throw error;
-      setState('done');
-      setTimeout(() => router.push('/account'), 1800);
+      setNotice('Password updated. Redirecting…');
+      setTimeout(() => router.push('/account'), 1500);
     } catch (e) {
       setNotice(e instanceof Error ? e.message : 'Could not update password.');
     } finally {
@@ -52,40 +67,58 @@ export default function ResetPassword() {
       <div className="max-w-md mx-auto w-full fade-in">
         <p className="eyebrow text-[#77796f]">JICO FOOTIES</p>
 
-        {state === 'verifying' && (
+        {step === 'code' ? (
           <>
-            <h1 className="serif text-4xl mt-3">Verifying your reset link…</h1>
-            <p className="text-sm text-[#77796f] mt-3">
-              This usually takes a second.
-            </p>
-          </>
-        )}
-
-        {state === 'error' && (
-          <>
-            <h1 className="serif text-4xl mt-3">Link expired.</h1>
-            <p className="text-sm text-[#77796f] mt-4 leading-7">
-              This password reset link is no longer valid. Request a new one
-              from the sign-in page.
-            </p>
-            {notice && <p className="text-xs mt-4 text-[#b91c1c]">{notice}</p>}
-            <Link
-              href="/account"
-              className="inline-block mt-8 bg-[#465041] text-white px-7 py-4 text-[10px] uppercase tracking-[.18em]"
-            >
-              Back to sign in
-            </Link>
-          </>
-        )}
-
-        {state === 'ready' && (
-          <>
-            <h1 className="serif text-4xl mt-3">Set a new password.</h1>
+            <h1 className="serif text-4xl mt-3">Enter your reset code.</h1>
             <p className="text-sm text-[#77796f] mt-3 mb-8">
-              Choose a strong password you&apos;ll remember.
+              Check your inbox for a 6-digit code from JICO FOOTIES.
             </p>
 
             <label className="block mb-4 text-xs">
+              Email address
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="block w-full bg-transparent border-b border-black/25 py-3 mt-2 outline-none"
+                autoComplete="email"
+              />
+            </label>
+
+            <label className="block mb-2 text-xs">
+              6-digit code
+              <input
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                inputMode="numeric"
+                maxLength={6}
+                className="block w-full bg-transparent border-b border-black/25 py-3 mt-2 outline-none tracking-[.5em] text-lg"
+                placeholder="000000"
+              />
+            </label>
+
+            {notice && <p className="text-xs mt-4 text-[#b91c1c]">{notice}</p>}
+
+            <button
+              onClick={verifyCode}
+              disabled={busy}
+              className="w-full bg-[#465041] text-white py-4 mt-6 text-[10px] uppercase tracking-[.18em] disabled:opacity-60"
+            >
+              {busy ? 'Verifying…' : 'Verify code'}
+            </button>
+
+            <Link
+              href="/account"
+              className="block text-center text-xs underline mt-6 text-[#77796f]"
+            >
+              ← Back to sign in
+            </Link>
+          </>
+        ) : (
+          <>
+            <h1 className="serif text-4xl mt-3">Set a new password.</h1>
+
+            <label className="block mb-4 mt-8 text-xs">
               New password
               <div className="relative">
                 <input
@@ -98,7 +131,7 @@ export default function ResetPassword() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((s) => !s)}
-                  className="absolute right-0 bottom-3 text-[11px] tracking-wider uppercase text-[#77796f] hover:text-[#181917]"
+                  className="absolute right-0 bottom-3 text-[11px] tracking-wider uppercase text-[#77796f]"
                 >
                   {showPassword ? 'Hide' : 'Show'}
                 </button>
@@ -121,28 +154,12 @@ export default function ResetPassword() {
             {notice && <p className="text-xs mt-3 text-[#b91c1c]">{notice}</p>}
 
             <button
-              onClick={submit}
+              onClick={updatePassword}
               disabled={busy}
               className="w-full bg-[#465041] text-white py-4 mt-6 text-[10px] uppercase tracking-[.18em] disabled:opacity-60"
             >
               {busy ? 'Updating…' : 'Update password'}
             </button>
-          </>
-        )}
-
-        {state === 'done' && (
-          <>
-            <div className="flex justify-center mb-8 mt-6">
-              <div className="w-20 h-20 rounded-full border border-black/15 grid place-items-center bg-[#e8e5de]">
-                <Mail size={26} strokeWidth={1.5} className="text-[#465041]" />
-              </div>
-            </div>
-            <h1 className="serif text-4xl text-center leading-tight">
-              Password updated.
-            </h1>
-            <p className="text-sm text-[#60625b] mt-6 text-center leading-7">
-              Taking you back to sign in…
-            </p>
           </>
         )}
       </div>

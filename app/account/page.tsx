@@ -39,7 +39,9 @@ export default function Account() {
           setUser(user.email || null);
           const { data, error } = await db
             .from('orders')
-            .select('id,status,total,created_at,items:order_items(product_name,size,quantity)')
+            .select(
+              'id,status,total,created_at,items:order_items(product_name,size,quantity)'
+            )
             .eq('user_id', user.id)
             .order('created_at', { ascending: false });
           if (error) setNotice(error.message);
@@ -110,13 +112,13 @@ export default function Account() {
     setNotice('');
     try {
       const db = createClient();
-      const { error } = await db.auth.resetPasswordForEmail(email, {
-        redirectTo: `${location.origin}/auth/reset`,
-      });
+      const { error } = await db.auth.resetPasswordForEmail(email);
       if (error) throw error;
       setResetEmail(email);
     } catch (e) {
-      setNotice(e instanceof Error ? e.message : 'Could not send reset link.');
+      setNotice(
+        e instanceof Error ? e.message : 'Could not send reset code.'
+      );
     } finally {
       setBusy(false);
     }
@@ -200,9 +202,7 @@ export default function Account() {
             </button>
           </div>
 
-          {notice && (
-            <p className="text-xs mt-5 text-[#465041]">{notice}</p>
-          )}
+          {notice && <p className="text-xs mt-5 text-[#465041]">{notice}</p>}
 
           <div className="mt-14 pt-8 border-t border-black/10">
             <button
@@ -221,7 +221,7 @@ export default function Account() {
     );
   }
 
-  // ---- Screen 2: Password reset email sent ----
+  // ---- Screen 2: Password reset code sent ----
   if (resetEmail) {
     return (
       <section className="page-width py-16 md:py-24 min-h-[70vh] flex items-center">
@@ -239,15 +239,21 @@ export default function Account() {
           </h1>
 
           <p className="text-sm text-[#60625b] mt-6 leading-7">
-            We sent a password reset link to
+            We sent a 6-digit reset code to
           </p>
           <p className="text-sm mt-1 text-[#181917] font-medium break-all">
             {resetEmail}
           </p>
           <p className="text-sm text-[#60625b] mt-4 leading-7">
-            Click the link inside to choose a new password. If you don&apos;t
-            see it, check your spam folder.
+            Open the email and copy the code. Then click below to enter it.
           </p>
+
+          <Link
+            href="/auth/reset"
+            className="inline-block mt-8 bg-[#465041] text-white px-7 py-4 text-[10px] uppercase tracking-[.18em]"
+          >
+            Enter reset code
+          </Link>
 
           <div className="mt-9">
             <button
@@ -259,9 +265,7 @@ export default function Account() {
             </button>
           </div>
 
-          {notice && (
-            <p className="text-xs mt-5 text-[#465041]">{notice}</p>
-          )}
+          {notice && <p className="text-xs mt-5 text-[#465041]">{notice}</p>}
 
           <div className="mt-14 pt-8 border-t border-black/10">
             <button
@@ -313,7 +317,9 @@ export default function Account() {
                   <p className="text-xs text-[#77796f] mt-2">
                     {new Date(o.created_at).toLocaleDateString()} ·{' '}
                     {o.items
-                      ?.map((i) => `${i.product_name}, size ${i.size} ×${i.quantity}`)
+                      ?.map(
+                        (i) => `${i.product_name}, size ${i.size} ×${i.quantity}`
+                      )
                       .join(' · ')}
                   </p>
                 </div>
@@ -480,7 +486,10 @@ function AddressBook() {
   const load = async () => {
     try {
       const d = createClient();
-      const { data } = await d.from('addresses').select('*').order('created_at');
+      const { data } = await d
+        .from('addresses')
+        .select('*')
+        .order('created_at');
       setRows(data || []);
     } catch {}
   };
