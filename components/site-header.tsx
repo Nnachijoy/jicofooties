@@ -20,9 +20,15 @@ export function SiteHeader() {
         )
         .catch(() => {});
     };
+
     update();
+    const interval = setInterval(update, 5000);
     window.addEventListener('jico-cart-update', update);
-    return () => window.removeEventListener('jico-cart-update', update);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('jico-cart-update', update);
+    };
   }, []);
 
   return (

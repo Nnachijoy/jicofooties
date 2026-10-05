@@ -1,7 +1,9 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
+import { subscribeToCart } from '@/lib/supabase/realtime-cart';
 import { naira } from '@/lib/products';
 
 type Line = {
@@ -25,6 +27,7 @@ export default function Cart() {
   const [items, setItems] = useState<Line[]>([]);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const channelRef = useRef<ReturnType<typeof subscribeToCart> | null>(null);
 
   const load = () =>
     fetch('/api/cart')
@@ -38,11 +41,30 @@ export default function Cart() {
 
   useEffect(() => {
     load();
+
+    const db = createClient();
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    db.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        channelRef.current = subscribeToCart(db, data.user.id, load);
+      }
+    });
+
+    // Polling fallback every 5 seconds
+    interval = setInterval(load, 5000);
+
+    return () => {
+      if (interval) clearInterval(interval);
+      if (channelRef.current) db.removeChannel(channelRef.current);
+    };
   }, []);
 
-  // Only include items that have a valid variant + product
   const validItems = items.filter(
-    (i) => i.variant && i.variant.product && typeof i.variant.product.price === 'number'
+    (i) =>
+      i.variant &&
+      i.variant.product &&
+      typeof i.variant.product.price === 'number'
   );
 
   const total = validItems.reduce(

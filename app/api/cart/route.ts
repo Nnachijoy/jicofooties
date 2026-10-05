@@ -22,8 +22,9 @@ export async function GET() {
 
   const { data: cartItems, error: cartError } = await db
     .from('cart_items')
-    .select('id, quantity, variant_id')
-    .eq('user_id', user.id);
+    .select('id, quantity, variant_id, created_at')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: true });
 
   if (cartError) {
     return NextResponse.json({ error: cartError.message }, { status: 500 });
