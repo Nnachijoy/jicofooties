@@ -17,7 +17,7 @@ export default function ResetPassword() {
 
   async function verifyCode() {
     if (!email || !code) {
-      setNotice('Enter your email and the 6-digit code.');
+      setNotice('Enter your email and the code from your inbox.');
       return;
     }
     setBusy(true);
@@ -26,7 +26,7 @@ export default function ResetPassword() {
       const db = createClient();
       const { error } = await db.auth.verifyOtp({
         email,
-        token: code,
+        token: code.trim(),
         type: 'recovery',
       });
       if (error) throw error;
@@ -71,7 +71,8 @@ export default function ResetPassword() {
           <>
             <h1 className="serif text-4xl mt-3">Enter your reset code.</h1>
             <p className="text-sm text-[#77796f] mt-3 mb-8">
-              Check your inbox for a 6-digit code from JICO FOOTIES.
+              Check your inbox (and spam folder) for an email from JICO
+              FOOTIES with your reset code.
             </p>
 
             <label className="block mb-4 text-xs">
@@ -86,14 +87,16 @@ export default function ResetPassword() {
             </label>
 
             <label className="block mb-2 text-xs">
-              6-digit code
+              Reset code
               <input
                 value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onChange={(e) =>
+                  setCode(e.target.value.replace(/\D/g, '').slice(0, 8))
+                }
                 inputMode="numeric"
-                maxLength={6}
-                className="block w-full bg-transparent border-b border-black/25 py-3 mt-2 outline-none tracking-[.5em] text-lg"
-                placeholder="000000"
+                maxLength={8}
+                className="block w-full bg-transparent border-b border-black/25 py-3 mt-2 outline-none tracking-[.4em] text-lg"
+                placeholder="00000000"
               />
             </label>
 
