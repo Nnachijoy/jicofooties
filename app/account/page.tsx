@@ -25,6 +25,7 @@ export default function Account() {
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirmEmail, setConfirmEmail] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -99,6 +100,31 @@ export default function Account() {
     }
   }
 
+  async function forgotPassword() {
+    if (!email) {
+      setNotice('Enter your email address first, then click Forgot password.');
+      return;
+    }
+    setBusy(true);
+    setNotice('');
+    try {
+      const db = createClient();
+      const { error } = await db.auth.resetPasswordForEmail(email, {
+        redirectTo: `${location.origin}/auth/reset`,
+      });
+      if (error) throw error;
+      setNotice(
+        'If an account exists for ' +
+          email +
+          ', a password reset link is on its way. Check your inbox.'
+      );
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : 'Could not send reset link.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function resendConfirmation() {
     if (!confirmEmail) return;
     setBusy(true);
@@ -108,9 +134,7 @@ export default function Account() {
       const { error } = await db.auth.resend({
         type: 'signup',
         email: confirmEmail,
-        options: {
-          emailRedirectTo: `${location.origin}/auth/callback`,
-        },
+        options: { emailRedirectTo: `${location.origin}/auth/callback` },
       });
       if (error) throw error;
       setNotice('Sent again. Check your inbox.');
@@ -179,9 +203,7 @@ export default function Account() {
             </button>
           </div>
 
-          {notice && (
-            <p className="text-xs mt-5 text-[#77796f]">{notice}</p>
-          )}
+          {notice && <p className="text-xs mt-5 text-[#77796f]">{notice}</p>}
 
           <div className="mt-14 pt-8 border-t border-black/10">
             <button
@@ -282,16 +304,43 @@ export default function Account() {
               autoComplete="email"
             />
           </label>
-          <label className="block mb-5 text-xs">
+
+          <label className="block mb-2 text-xs">
             Password
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="block w-full bg-transparent border-b border-black/25 py-3 mt-2 outline-none"
-              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="block w-full bg-transparent border-b border-black/25 py-3 mt-2 outline-none pr-12"
+                autoComplete={
+                  mode === 'signin' ? 'current-password' : 'new-password'
+                }
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                className="absolute right-0 bottom-3 text-[11px] tracking-wider uppercase text-[#77796f] hover:text-[#181917]"
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </label>
+
+          {mode === 'signin' && (
+            <div className="text-right mb-5">
+              <button
+                type="button"
+                onClick={forgotPassword}
+                disabled={busy}
+                className="text-xs underline text-[#77796f] hover:text-[#181917] disabled:opacity-50"
+              >
+                Forgot password?
+              </button>
+            </div>
+          )}
+
+          {mode === 'signup' && <div className="mb-3" />}
 
           <button
             onClick={auth}
@@ -387,7 +436,10 @@ function AddressBook() {
     <>
       <div className="grid md:grid-cols-2 gap-3">
         {rows.map((a) => (
-          <div key={a.id} className="border border-black/15 p-4 text-xs leading-6">
+          <div
+            key={a.id}
+            className="border border-black/15 p-4 text-xs leading-6"
+          >
             <strong>
               {a.label} · {a.full_name}
             </strong>
