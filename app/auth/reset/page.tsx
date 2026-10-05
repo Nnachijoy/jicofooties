@@ -18,43 +18,9 @@ export default function ResetPassword() {
 
   useEffect(() => {
     const db = createClient();
-
-    async function init() {
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get('code');
-      const errorParam =
-        params.get('error_description') || params.get('error');
-
-      if (errorParam) {
-        setNotice(decodeURIComponent(errorParam.replace(/\+/g, ' ')));
-        setState('error');
-        return;
-      }
-
-      if (code) {
-        const { error } = await db.auth.exchangeCodeForSession(code);
-        if (error) {
-          setNotice(error.message);
-          setState('error');
-          return;
-        }
-        setState('ready');
-        // Clean the code from the URL so refresh doesn't break it
-        window.history.replaceState({}, '', '/auth/reset');
-        return;
-      }
-
-      // No code in URL — maybe a session already exists (user opened it directly)
-      const { data } = await db.auth.getSession();
-      if (data.session) {
-        setState('ready');
-      } else {
-        setNotice('This reset link is invalid or has expired.');
-        setState('error');
-      }
-    }
-
-    init();
+    db.auth.getSession().then(({ data }) => {
+      setState(data.session ? 'ready' : 'error');
+    });
   }, []);
 
   async function submit() {
@@ -102,9 +68,7 @@ export default function ResetPassword() {
               This password reset link is no longer valid. Request a new one
               from the sign-in page.
             </p>
-            {notice && (
-              <p className="text-xs mt-4 text-[#b91c1c]">{notice}</p>
-            )}
+            {notice && <p className="text-xs mt-4 text-[#b91c1c]">{notice}</p>}
             <Link
               href="/account"
               className="inline-block mt-8 bg-[#465041] text-white px-7 py-4 text-[10px] uppercase tracking-[.18em]"
@@ -154,9 +118,7 @@ export default function ResetPassword() {
               </div>
             </label>
 
-            {notice && (
-              <p className="text-xs mt-3 text-[#b91c1c]">{notice}</p>
-            )}
+            {notice && <p className="text-xs mt-3 text-[#b91c1c]">{notice}</p>}
 
             <button
               onClick={submit}
