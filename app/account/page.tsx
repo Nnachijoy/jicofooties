@@ -25,6 +25,7 @@ export default function Account() {
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirmEmail, setConfirmEmail] = useState<string | null>(null);
+  const [resetEmail, setResetEmail] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
@@ -113,11 +114,7 @@ export default function Account() {
         redirectTo: `${location.origin}/auth/reset`,
       });
       if (error) throw error;
-      setNotice(
-        'If an account exists for ' +
-          email +
-          ', a password reset link is on its way. Check your inbox.'
-      );
+      setResetEmail(email);
     } catch (e) {
       setNotice(e instanceof Error ? e.message : 'Could not send reset link.');
     } finally {
@@ -165,7 +162,7 @@ export default function Account() {
     location.reload();
   }
 
-  // ---- Confirmation screen (after signup) ----
+  // ---- Screen 1: Signup confirmation ----
   if (confirmEmail) {
     return (
       <section className="page-width py-16 md:py-24 min-h-[70vh] flex items-center">
@@ -203,7 +200,9 @@ export default function Account() {
             </button>
           </div>
 
-          {notice && <p className="text-xs mt-5 text-[#77796f]">{notice}</p>}
+          {notice && (
+            <p className="text-xs mt-5 text-[#465041]">{notice}</p>
+          )}
 
           <div className="mt-14 pt-8 border-t border-black/10">
             <button
@@ -222,9 +221,69 @@ export default function Account() {
     );
   }
 
-  return (
-    <section className="page-width py-16 md:py-24 min-h-[55vh]">
-      {user ? (
+  // ---- Screen 2: Password reset email sent ----
+  if (resetEmail) {
+    return (
+      <section className="page-width py-16 md:py-24 min-h-[70vh] flex items-center">
+        <div className="max-w-md mx-auto w-full text-center fade-in">
+          <p className="eyebrow text-[#77796f] mb-8">JICO FOOTIES</p>
+
+          <div className="flex justify-center mb-8">
+            <div className="w-20 h-20 rounded-full border border-black/15 grid place-items-center bg-[#e8e5de]">
+              <Mail size={26} strokeWidth={1.5} className="text-[#465041]" />
+            </div>
+          </div>
+
+          <h1 className="serif text-4xl md:text-5xl leading-tight">
+            Check your inbox.
+          </h1>
+
+          <p className="text-sm text-[#60625b] mt-6 leading-7">
+            We sent a password reset link to
+          </p>
+          <p className="text-sm mt-1 text-[#181917] font-medium break-all">
+            {resetEmail}
+          </p>
+          <p className="text-sm text-[#60625b] mt-4 leading-7">
+            Click the link inside to choose a new password. If you don&apos;t
+            see it, check your spam folder.
+          </p>
+
+          <div className="mt-9">
+            <button
+              onClick={forgotPassword}
+              disabled={busy}
+              className="text-xs underline disabled:opacity-50 hover:text-[#465041]"
+            >
+              {busy ? 'Sending…' : "Didn't get it? Send again"}
+            </button>
+          </div>
+
+          {notice && (
+            <p className="text-xs mt-5 text-[#465041]">{notice}</p>
+          )}
+
+          <div className="mt-14 pt-8 border-t border-black/10">
+            <button
+              onClick={() => {
+                setResetEmail(null);
+                setMode('signin');
+                setNotice('');
+              }}
+              className="text-xs underline text-[#77796f] hover:text-[#181917]"
+            >
+              ← Back to sign in
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // ---- Screen 3: Signed-in view ----
+  if (user) {
+    return (
+      <section className="page-width py-16 md:py-24 min-h-[55vh]">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-end border-b border-black/15 pb-7">
             <div>
@@ -273,106 +332,125 @@ export default function Account() {
           <h2 className="serif text-2xl mt-12 mb-5">Delivery addresses</h2>
           <AddressBook />
         </div>
-      ) : (
-        <div className="max-w-md mx-auto">
-          <p className="eyebrow text-[#77796f]">JICO FOOTIES</p>
-          <h1 className="serif text-4xl mt-3">
-            {mode === 'signin' ? 'Welcome back.' : 'Make yourself at home.'}
-          </h1>
-          <p className="text-sm text-[#77796f] mt-3 mb-8">
-            Sign in to keep your bag, details, and orders close.
-          </p>
+      </section>
+    );
+  }
 
-          {mode === 'signup' && (
-            <label className="block mb-4 text-xs">
-              Full name
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="block w-full bg-transparent border-b border-black/25 py-3 mt-2 outline-none"
-                autoComplete="name"
-              />
-            </label>
-          )}
+  // ---- Screen 4: Sign in / Sign up form ----
+  return (
+    <section className="page-width py-16 md:py-24 min-h-[55vh]">
+      <div className="max-w-md mx-auto">
+        <p className="eyebrow text-[#77796f]">JICO FOOTIES</p>
+        <h1 className="serif text-4xl mt-3">
+          {mode === 'signin' ? 'Welcome back.' : 'Make yourself at home.'}
+        </h1>
+        <p className="text-sm text-[#77796f] mt-3 mb-8">
+          Sign in to keep your bag, details, and orders close.
+        </p>
+
+        {mode === 'signup' && (
           <label className="block mb-4 text-xs">
-            Email address
+            Full name
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               className="block w-full bg-transparent border-b border-black/25 py-3 mt-2 outline-none"
-              autoComplete="email"
+              autoComplete="name"
             />
           </label>
+        )}
 
-          <label className="block mb-2 text-xs">
-            Password
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="block w-full bg-transparent border-b border-black/25 py-3 mt-2 outline-none pr-12"
-                autoComplete={
-                  mode === 'signin' ? 'current-password' : 'new-password'
-                }
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-0 bottom-3 text-[11px] tracking-wider uppercase text-[#77796f] hover:text-[#181917]"
-              >
-                {showPassword ? 'Hide' : 'Show'}
-              </button>
-            </div>
-          </label>
+        <label className="block mb-4 text-xs">
+          Email address
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="block w-full bg-transparent border-b border-black/25 py-3 mt-2 outline-none"
+            autoComplete="email"
+          />
+        </label>
 
-          {mode === 'signin' && (
-            <div className="text-right mb-5">
-              <button
-                type="button"
-                onClick={forgotPassword}
-                disabled={busy}
-                className="text-xs underline text-[#77796f] hover:text-[#181917] disabled:opacity-50"
-              >
-                Forgot password?
-              </button>
-            </div>
-          )}
+        <label className="block mb-2 text-xs">
+          Password
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="block w-full bg-transparent border-b border-black/25 py-3 mt-2 outline-none pr-12"
+              autoComplete={
+                mode === 'signin' ? 'current-password' : 'new-password'
+              }
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              className="absolute right-0 bottom-3 text-[11px] tracking-wider uppercase text-[#77796f] hover:text-[#181917]"
+            >
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
+        </label>
 
-          {mode === 'signup' && <div className="mb-3" />}
+        {mode === 'signin' && (
+          <div className="text-right mb-5">
+            <button
+              type="button"
+              onClick={forgotPassword}
+              disabled={busy}
+              className="text-xs underline text-[#77796f] hover:text-[#181917] disabled:opacity-50"
+            >
+              Forgot password?
+            </button>
+          </div>
+        )}
 
-          <button
-            onClick={auth}
-            disabled={busy}
-            className="w-full bg-[#465041] text-white py-4 text-[10px] uppercase tracking-[.18em] disabled:opacity-60"
+        {mode === 'signup' && <div className="mb-3" />}
+
+        {notice && (
+          <p
+            className={`text-xs mb-4 ${
+              notice.toLowerCase().includes('invalid') ||
+              notice.toLowerCase().includes('failed') ||
+              notice.toLowerCase().includes('incorrect') ||
+              notice.toLowerCase().includes('error')
+                ? 'text-[#b91c1c]'
+                : 'text-[#465041]'
+            }`}
           >
-            {busy
-              ? 'Please wait…'
-              : mode === 'signin'
-              ? 'Sign in'
-              : 'Create account'}
-          </button>
+            {notice}
+          </p>
+        )}
 
-          <button
-            onClick={google}
-            className="w-full border border-black/20 py-4 mt-3 text-xs"
-          >
-            Continue with Google
-          </button>
+        <button
+          onClick={auth}
+          disabled={busy}
+          className="w-full bg-[#465041] text-white py-4 text-[10px] uppercase tracking-[.18em] disabled:opacity-60"
+        >
+          {busy
+            ? 'Please wait…'
+            : mode === 'signin'
+            ? 'Sign in'
+            : 'Create account'}
+        </button>
 
-          <button
-            onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
-            className="text-xs mt-6 underline"
-          >
-            {mode === 'signin'
-              ? 'New here? Create an account'
-              : 'Already have an account? Sign in'}
-          </button>
+        <button
+          onClick={google}
+          className="w-full border border-black/20 py-4 mt-3 text-xs"
+        >
+          Continue with Google
+        </button>
 
-          {notice && <p className="text-xs mt-5">{notice}</p>}
-        </div>
-      )}
+        <button
+          onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
+          className="text-xs mt-6 underline"
+        >
+          {mode === 'signin'
+            ? 'New here? Create an account'
+            : 'Already have an account? Sign in'}
+        </button>
+      </div>
     </section>
   );
 }
